@@ -1,103 +1,82 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className='bg-background w-full flex flex-col items-center'>
+      {/* Hero section */}
+      <section className='container py-24 sm:py-32'>
+        <div className='mx-auto max-w-2xl text-center'>
+          <h1 className='text-4xl font-bold tracking-tight sm:text-6xl'>
+            코드 리뷰로 성장하는 개발자
+          </h1>
+          <p className='mt-6 text-lg leading-8 text-muted-foreground'>
+            경험 많은 개발자들의 코드 리뷰를 통해 실력을 키우고, 커리어를
+            발전시키세요. 멘토링을 통해 더 나은 개발자가 되어보세요.
+          </p>
+          <div className='mt-10 flex items-center justify-center gap-x-6'>
+            <Button asChild size='lg'>
+              <Link href='/register'>시작하기</Link>
+            </Button>
+            <Button variant='link' asChild>
+              <Link href='/about'>
+                더 알아보기 <span aria-hidden='true'>→</span>
+              </Link>
+            </Button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </section>
+
+      {/* Feature section */}
+      <section className='container py-24 sm:py-32'>
+        <div className='mx-auto max-w-2xl text-center'>
+          <h2 className='text-base font-semibold text-primary'>더 빠른 성장</h2>
+          <p className='mt-2 text-3xl font-bold tracking-tight sm:text-4xl'>
+            코드 리뷰의 모든 것
+          </p>
+          <p className='mt-6 text-lg leading-8 text-muted-foreground'>
+            실무에서 검증된 개발자들의 피드백을 받아보세요. 코드 품질을 높이고
+            더 나은 개발자가 되어보세요.
+          </p>
+        </div>
+
+        <div className='mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 sm:mt-20 lg:mt-24 lg:max-w-none lg:grid-cols-3'>
+          <Card>
+            <CardHeader>
+              <CardTitle>실무 중심의 피드백</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className='text-muted-foreground'>
+                실제 프로젝트에서 검증된 개발자들의 실무 중심 피드백을
+                받아보세요.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>맞춤형 멘토링</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className='text-muted-foreground'>
+                당신의 수준과 목표에 맞는 맞춤형 멘토링을 제공합니다.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>지속적인 성장</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className='text-muted-foreground'>
+                정기적인 코드 리뷰를 통해 지속적으로 성장할 수 있습니다.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
     </div>
   );
 }
