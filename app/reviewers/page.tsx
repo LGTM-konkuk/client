@@ -10,6 +10,15 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { ReadReviewerResponse, Page, ApiResponse } from "@/types";
 import { UnauthorizedAccess } from "@/components/UnauthorizedAccess";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 export default function ReviewersPage() {
   const { user, isLoading: authLoading, getToken } = useAuth();
@@ -120,6 +129,57 @@ export default function ReviewersPage() {
     );
   }
 
+  // 페이지네이션 번호 생성 로직 (shadcn/ui Pagination에 맞게 단순화)
+  const renderPageNumbers = () => {
+    const pageItems = [];
+    const displayPages = 5; // 표시할 페이지 번호 개수 (현재 페이지 기준 양옆 + 현재 페이지)
+    const halfDisplayPages = Math.floor(displayPages / 2);
+
+    let startPage = Math.max(0, currentPage - halfDisplayPages);
+    let endPage = Math.min(totalPages - 1, currentPage + halfDisplayPages);
+
+    if (currentPage < halfDisplayPages) {
+      endPage = Math.min(totalPages - 1, displayPages - 1);
+    }
+    if (currentPage > totalPages - 1 - halfDisplayPages) {
+      startPage = Math.max(0, totalPages - displayPages);
+    }
+
+    if (startPage > 0) {
+      pageItems.push(
+        <PaginationItem key='start-ellipsis'>
+          <PaginationEllipsis />
+        </PaginationItem>,
+      );
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageItems.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            href='#' // onClick으로 처리하므로 href는 형식적으로 추가
+            onClick={(e) => {
+              e.preventDefault();
+              handlePageChange(i);
+            }}
+            isActive={i === currentPage}
+          >
+            {i + 1}
+          </PaginationLink>
+        </PaginationItem>,
+      );
+    }
+
+    if (endPage < totalPages - 1) {
+      pageItems.push(
+        <PaginationItem key='end-ellipsis'>
+          <PaginationEllipsis />
+        </PaginationItem>,
+      );
+    }
+    return pageItems;
+  };
+
   return (
     <div className='container py-12'>
       <div className='mb-8'>
@@ -194,35 +254,41 @@ export default function ReviewersPage() {
         </div>
 
         {totalPages > 1 && (
-          <div className='flex justify-center gap-2'>
-            <Button
-              variant='outline'
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 0}
-            >
-              이전
-            </Button>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              const pageNum =
-                Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i;
-              return (
-                <Button
-                  key={pageNum}
-                  variant={pageNum === currentPage ? "default" : "outline"}
-                  onClick={() => handlePageChange(pageNum)}
-                >
-                  {pageNum + 1}
-                </Button>
-              );
-            })}
-            <Button
-              variant='outline'
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages - 1}
-            >
-              다음
-            </Button>
-          </div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href='#' // onClick으로 처리
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage > 0) handlePageChange(currentPage - 1);
+                  }}
+                  // shadcn/ui는 disabled 대신 비활성 스타일을 클래스로 제어
+                  className={
+                    currentPage === 0
+                      ? "pointer-events-none opacity-50"
+                      : undefined
+                  }
+                />
+              </PaginationItem>
+              {renderPageNumbers()}
+              <PaginationItem>
+                <PaginationNext
+                  href='#' // onClick으로 처리
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages - 1)
+                      handlePageChange(currentPage + 1);
+                  }}
+                  className={
+                    currentPage >= totalPages - 1
+                      ? "pointer-events-none opacity-50"
+                      : undefined
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         )}
       </>
     </div>
