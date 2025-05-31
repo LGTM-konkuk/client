@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,8 +32,16 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-export default function Login() {
+export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // URL 파라미터에서 메시지 가져오기 (회원가입 후 리다이렉트 시)
+  const message = searchParams.get("message");
+
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -42,18 +51,17 @@ export default function Login() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
+    setIsLoading(true);
+    setError(null);
 
-    if (result?.error) {
-      // TODO: 에러 메시지 표시
-      console.error(result.error);
-    } else {
+    try {
+      await login(data.email, data.password);
       router.push("/");
-      router.refresh();
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "로그인에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -74,6 +82,20 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* 성공 메시지 표시 */}
+          {message && (
+            <div className='bg-green-50 border border-green-200 rounded-md p-4 mb-6'>
+              <p className='text-green-600 text-sm'>{message}</p>
+            </div>
+          )}
+
+          {/* 에러 메시지 표시 */}
+          {error && (
+            <div className='bg-red-50 border border-red-200 rounded-md p-4 mb-6'>
+              <p className='text-red-600 text-sm'>{error}</p>
+            </div>
+          )}
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
               <FormField
@@ -112,28 +134,8 @@ export default function Login() {
                 )}
               />
 
-              <div className='flex items-center justify-between'>
-                <div className='flex items-center space-x-2'>
-                  <input
-                    type='checkbox'
-                    id='remember-me'
-                    className='h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary'
-                  />
-                  <label
-                    htmlFor='remember-me'
-                    className='text-sm font-normal text-muted-foreground'
-                  >
-                    로그인 상태 유지
-                  </label>
-                </div>
-
-                <Button variant='link' asChild className='px-0'>
-                  <Link href='/forgot-password'>비밀번호를 잊으셨나요?</Link>
-                </Button>
-              </div>
-
-              <Button type='submit' className='w-full'>
-                로그인
+              <Button type='submit' className='w-full' disabled={isLoading}>
+                {isLoading ? "로그인 중..." : "로그인"}
               </Button>
             </form>
           </Form>
