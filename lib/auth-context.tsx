@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (token) {
       try {
-        await fetch("/auth/signout", {
+        await fetch("/api/backend/auth/signout", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      const response = await fetch("/users/me", {
+      const response = await fetch("/api/backend/users/me", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
