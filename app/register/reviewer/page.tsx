@@ -18,13 +18,15 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { apiRequest, handleApiError } from "@/lib/api-utils";
+import { ApiResponse } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-const mentorSchema = z
+const reviewerSchema = z
   .object({
     name: z.string().min(1, "이름을 입력해주세요"),
     email: z.string().email("올바른 이메일 형식이 아닙니다"),
@@ -39,15 +41,15 @@ const mentorSchema = z
     path: ["confirmPassword"],
   });
 
-type MentorFormData = z.infer<typeof mentorSchema>;
+type ReviewerFormData = z.infer<typeof reviewerSchema>;
 
-export default function MentorRegister() {
+export default function ReviewerRegister() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<MentorFormData>({
-    resolver: zodResolver(mentorSchema),
+  const form = useForm<ReviewerFormData>({
+    resolver: zodResolver(reviewerSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -59,12 +61,11 @@ export default function MentorRegister() {
     },
   });
 
-  const onSubmit = async (data: MentorFormData) => {
+  const onSubmit = async (data: ReviewerFormData) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // 문자열을 배열로 변환 (쉼표로 구분)
       const preferencesArray = data.preferences
         .split(",")
         .map((item) => item.trim())
@@ -75,27 +76,18 @@ export default function MentorRegister() {
         .map((item) => item.trim())
         .filter((item) => item.length > 0);
 
-      await fetch("/reviewers", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-          name: data.name,
-          preferences: preferencesArray,
-          bio: data.bio,
-          tags: tagsArray,
-        }),
+      await apiRequest<ApiResponse>("POST", "/auth/signup/reviewer", {
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        preferences: preferencesArray,
+        bio: data.bio,
+        tags: tagsArray,
       });
 
-      // 회원가입 성공 시 로그인 페이지로 이동
       router.push("/login?message=회원가입이 완료되었습니다. 로그인해주세요.");
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "회원가입에 실패했습니다.",
-      );
+    } catch (err) {
+      setError(handleApiError(err));
     } finally {
       setIsLoading(false);
     }

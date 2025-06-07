@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/lib/auth-context";
-import { handleApiResponse } from "@/lib/api-utils";
+import { useAuthStore } from "@/store/auth-store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { ReadReviewerResponse, Page, ApiResponse } from "@/types";
+import { ReadReviewerResponse } from "@/types";
 import { UnauthorizedAccess } from "@/components/UnauthorizedAccess";
 import {
   Pagination,
@@ -19,38 +18,43 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useApi } from "@/api";
+import ReviewersLoading from "./loading";
 
 export default function ReviewersPage() {
-  const { user, isLoading: authLoading, getToken } = useAuth();
+  const user = useAuthStore((state) => state.user);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+  const authLoading = useAuthStore((state) => state.isLoading);
+
   const [reviewers, setReviewers] = useState<ReadReviewerResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchPreferences, setSearchPreferences] = useState("");
   const [searchTags, setSearchTags] = useState("");
+  const api = useApi();
 
   const fetchReviewers = async (page = 0) => {
+    if (!user) {
+      setReviewers([]);
+      setTotalPages(0);
+      setCurrentPage(0);
+      return;
+    }
+
     try {
-      const token = getToken();
-      const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const options = {
+        page,
+        size: 12,
+        ...(searchPreferences && { preferences: searchPreferences }),
+        ...(searchTags && { tags: searchTags }),
+      };
 
-      const params = new URLSearchParams({ page: page.toString(), size: "12" });
-      if (searchPreferences) params.set("preferences", searchPreferences);
-      if (searchTags) params.set("tags", searchTags);
+      const result = await api.reviewers.list(options);
 
-      const response = await fetch(
-        `/api/backend/reviewers?${params.toString()}`,
-        { headers },
-      );
-
-      const result = await handleApiResponse<
-        ApiResponse<Page<ReadReviewerResponse>>
-      >(response);
-
-      if (result.data) {
-        setReviewers(result.data.content);
-        setTotalPages(result.data.totalPages);
-        setCurrentPage(result.data.page);
+      if (result) {
+        setReviewers(result.content);
+        setTotalPages(result.totalPages);
+        setCurrentPage(result.page);
       } else {
         console.warn("API 응답에 data 필드가 없거나 비어있습니다.", result);
         setReviewers([]);
@@ -64,15 +68,16 @@ export default function ReviewersPage() {
   };
 
   useEffect(() => {
-    if (!authLoading) {
+    if (isInitialized) {
       if (user) {
         fetchReviewers(currentPage);
       } else {
         setReviewers([]);
         setTotalPages(0);
+        setCurrentPage(0);
       }
     }
-  }, [authLoading, user, currentPage]);
+  }, [isInitialized, user, currentPage, searchPreferences, searchTags]);
 
   const handleSearch = () => {
     setCurrentPage(0);
@@ -85,8 +90,8 @@ export default function ReviewersPage() {
     setCurrentPage(page);
   };
 
-  if (authLoading) {
-    return null;
+  if (!isInitialized || authLoading) {
+    return <ReviewersLoading />;
   }
 
   if (!user) {
@@ -177,6 +182,14 @@ export default function ReviewersPage() {
         </PaginationItem>,
       );
     }
+
+    if (pageItems.length === 0 && totalPages > 0) {
+      return (
+        <PaginationItem>
+          <PaginationLink>1</PaginationLink>
+        </PaginationItem>
+      );
+    }
     return pageItems;
   };
 
@@ -243,7 +256,7 @@ export default function ReviewersPage() {
                 </div>
                 <div className='mt-4'>
                   <Button asChild className='w-full'>
-                    <Link href={`/review?reviewerId=${reviewer.id}`}>
+                    <Link href={`/reviews/new?reviewerId=${reviewer.id}`}>
                       리뷰 요청하기
                     </Link>
                   </Button>

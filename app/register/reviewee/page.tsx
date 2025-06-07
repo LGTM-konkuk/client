@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { handleApiError, handleApiResponse } from "@/lib/api-utils";
+import { apiRequest, handleApiError } from "@/lib/api-utils";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -23,8 +23,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ApiResponse, AuthResponse } from "@/types";
 
-const menteeSchema = z
+const revieweeSchema = z
   .object({
     name: z.string().min(1, "이름을 입력해주세요"),
     email: z.string().email("올바른 이메일 형식이 아닙니다"),
@@ -37,15 +38,15 @@ const menteeSchema = z
     path: ["confirmPassword"],
   });
 
-type MenteeFormData = z.infer<typeof menteeSchema>;
+type RevieweeFormData = z.infer<typeof revieweeSchema>;
 
-export default function MenteeRegister() {
+export default function RevieweeRegister() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<MenteeFormData>({
-    resolver: zodResolver(menteeSchema),
+  const form = useForm<RevieweeFormData>({
+    resolver: zodResolver(revieweeSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -55,7 +56,7 @@ export default function MenteeRegister() {
     },
   });
 
-  const onSubmit = async (data: MenteeFormData) => {
+  const onSubmit = async (data: RevieweeFormData) => {
     setIsLoading(true);
     setError(null);
 
@@ -65,20 +66,17 @@ export default function MenteeRegister() {
         .map((item) => item.trim())
         .filter((item) => item.length > 0);
 
-      const response = await fetch("/api/backend/auth/signup/reviewee", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      await apiRequest<ApiResponse<AuthResponse>>(
+        "POST",
+        "/auth/signup/reviewee",
+        {
           email: data.email,
           password: data.password,
           name: data.name,
           preferences: preferencesArray,
-        }),
-      });
+        },
+      );
 
-      await handleApiResponse(response);
       router.push("/login?message=회원가입이 완료되었습니다. 로그인해주세요.");
     } catch (err) {
       setError(handleApiError(err));
@@ -90,7 +88,7 @@ export default function MenteeRegister() {
   return (
     <div className='container max-w-2xl py-12'>
       <div className='text-center mb-8'>
-        <h2 className='text-4xl font-bold tracking-tight'>멘티 등록</h2>
+        <h2 className='text-4xl font-bold tracking-tight'>리뷰이 등록</h2>
         <p className='mt-4 text-xl text-muted-foreground'>
           코드 리뷰를 통해 실력을 키우고 싶은 개발자분들을 환영합니다.
         </p>
@@ -100,7 +98,7 @@ export default function MenteeRegister() {
         <CardHeader>
           <CardTitle>기본 정보</CardTitle>
           <CardDescription>
-            멘티 등록을 위한 기본 정보를 입력해주세요.
+            리뷰이 등록을 위한 기본 정보를 입력해주세요.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -190,7 +188,7 @@ export default function MenteeRegister() {
               />
 
               <Button type='submit' className='w-full' disabled={isLoading}>
-                {isLoading ? "등록 중..." : "멘티로 등록하기"}
+                {isLoading ? "등록 중..." : "리뷰이로 등록하기"}
               </Button>
             </form>
           </Form>

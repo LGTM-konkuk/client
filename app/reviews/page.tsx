@@ -1,19 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { handleApiResponse } from "@/lib/api-utils";
-import { useAuth } from "@/lib/auth-context";
-import {
-  ApiResponse,
-  Page,
-  ReadReviewResponse,
-  ReviewSubmissionStatus,
-} from "@/types";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { UnauthorizedAccess } from "@/components/UnauthorizedAccess";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Pagination,
   PaginationContent,
@@ -23,13 +13,22 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useApi } from "@/api";
+import { useAuthStore } from "@/store/auth-store";
+import { ReadReviewResponse, ReviewSubmissionStatus } from "@/types";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import ReviewsLoading from "./loading";
 
 export default function ReviewsPage() {
   const router = useRouter();
-  const { user, getToken, isLoading: authLoading } = useAuth();
+  const user = useAuthStore((state) => state.user);
+  const authLoading = useAuthStore((state) => state.isLoading);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
   const [reviews, setReviews] = useState<ReadReviewResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const api = useApi();
 
   const fetchReviews = async (page = 0) => {
     if (!user) {
@@ -38,31 +37,14 @@ export default function ReviewsPage() {
       setCurrentPage(0);
       return;
     }
+
     try {
-      const token = getToken();
-      const params = new URLSearchParams({
-        page: page.toString(),
-        size: "10",
-      });
+      const result = await api.reviews.list(page, 10);
 
-      const response = await fetch(
-        `/api/backend/reviews?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      const result = await handleApiResponse<
-        ApiResponse<Page<ReadReviewResponse>>
-      >(response);
-
-      if (result.data) {
-        setReviews(result.data.content);
-        setTotalPages(result.data.totalPages);
-        setCurrentPage(result.data.page);
+      if (result) {
+        setReviews(result.content);
+        setTotalPages(result.totalPages);
+        setCurrentPage(result.page);
       } else {
         console.warn("API 응답에 data 필드가 없거나 비어있습니다.", result);
         setReviews([]);
@@ -76,7 +58,7 @@ export default function ReviewsPage() {
   };
 
   useEffect(() => {
-    if (!authLoading) {
+    if (isInitialized) {
       if (user) {
         fetchReviews(currentPage);
       } else {
@@ -85,7 +67,7 @@ export default function ReviewsPage() {
         setCurrentPage(0);
       }
     }
-  }, [authLoading, user, currentPage]);
+  }, [isInitialized, user, currentPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -176,124 +158,116 @@ export default function ReviewsPage() {
     return pageItems;
   };
 
-  if (authLoading) {
-    return null;
+  if (!isInitialized || authLoading) {
+    return <ReviewsLoading />;
   }
 
   if (!user) {
     return <UnauthorizedAccess />;
   }
 
-  if (reviews.length === 0) {
-    return (
-      <div className='container mx-auto py-8'>
-        <div className='flex justify-between items-center mb-8'>
-          <h1 className='text-3xl font-bold'>내 코드 리뷰</h1>
-          <Button onClick={() => router.push("/submit-review")}>
-            새 리뷰 요청
-          </Button>
-        </div>
-        <div className='text-center py-12'>
-          <p className='text-gray-500 mb-4'>
-            아직 요청했거나 받은 코드 리뷰가 없습니다.
-          </p>
-          <Button onClick={() => router.push("/submit-review")}>
-            첫 리뷰 요청하기
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className='container mx-auto py-8'>
       <div className='flex justify-between items-center mb-8'>
         <h1 className='text-3xl font-bold'>내 코드 리뷰</h1>
-        <Button onClick={() => router.push("/submit-review")}>
+        <Button onClick={() => router.push("/reviews/new")}>
           새 리뷰 요청
         </Button>
       </div>
 
-      <>
-        <div className='space-y-4 mb-8'>
-          {reviews.map((review) => (
-            <Card
-              key={review.id}
-              className='hover:shadow-lg transition-shadow cursor-pointer'
-              onClick={() => router.push(`/reviews/${review.id}`)}
-            >
-              <CardHeader>
-                <div className='flex justify-between items-start'>
-                  <CardTitle className='text-lg'>
-                    {review.gitUrl
-                      ? review.gitUrl.split("/").pop()
-                      : `리뷰 ID: ${review.id}`}
-                  </CardTitle>
-                  {getStatusBadge(review.status)}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className='space-y-2'>
-                  <p className='text-sm text-gray-500'>
-                    리뷰 내용 (일부):{" "}
-                    {review.reviewContent?.substring(0, 100) || "내용 없음"}
-                    {review.reviewContent && review.reviewContent.length > 100
-                      ? "..."
-                      : ""}
-                  </p>
-                  <p className='text-sm text-gray-500'>
-                    리뷰어: {review.reviewer.user.name}
-                  </p>
-                  <p className='text-sm text-gray-500'>
-                    리뷰이: {review.reviewee.user.name}
-                  </p>
-                  <div className='flex justify-between text-sm text-gray-500'>
-                    <span>작성일: {formatDate(review.createdAt)}</span>
-                    <span>마지막 업데이트: {formatDate(review.updatedAt)}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      {reviews.length === 0 ? (
+        <div className='text-center py-12'>
+          <p className='text-gray-500 mb-4'>
+            아직 요청했거나 받은 코드 리뷰가 없습니다.
+          </p>
+          <Button onClick={() => router.push("/reviews/new")}>
+            첫 리뷰 요청하기
+          </Button>
         </div>
+      ) : (
+        <>
+          <div className='space-y-4 mb-8'>
+            {reviews.map((review) => (
+              <Card
+                key={review.id}
+                className='hover:shadow-lg transition-shadow cursor-pointer'
+                onClick={() => router.push(`/reviews/${review.id}`)}
+              >
+                <CardHeader>
+                  <div className='flex justify-between items-start'>
+                    <CardTitle className='text-lg'>
+                      {review.gitUrl
+                        ? review.gitUrl.split("/").pop()
+                        : `리뷰 ID: ${review.id}`}
+                    </CardTitle>
+                    {getStatusBadge(review.status)}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className='space-y-2'>
+                    <p className='text-sm text-gray-500'>
+                      리뷰 내용 (일부):{" "}
+                      {review.reviewContent?.substring(0, 100) || "내용 없음"}
+                      {review.reviewContent && review.reviewContent.length > 100
+                        ? "..."
+                        : ""}
+                    </p>
+                    <p className='text-sm text-gray-500'>
+                      리뷰어: {review.reviewer.user.name}
+                    </p>
+                    <p className='text-sm text-gray-500'>
+                      리뷰이: {review.reviewee.user.name}
+                    </p>
+                    <div className='flex justify-between text-sm text-gray-500'>
+                      <span>작성일: {formatDate(review.createdAt)}</span>
+                      <span>
+                        마지막 업데이트: {formatDate(review.updatedAt)}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-        {totalPages > 1 && (
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href='#' // onClick으로 처리
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage > 0) handlePageChange(currentPage - 1);
-                  }}
-                  className={
-                    currentPage === 0
-                      ? "pointer-events-none opacity-50"
-                      : undefined
-                  }
-                />
-              </PaginationItem>
-              {renderPageNumbers()}
-              <PaginationItem>
-                <PaginationNext
-                  href='#' // onClick으로 처리
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage < totalPages - 1)
-                      handlePageChange(currentPage + 1);
-                  }}
-                  className={
-                    currentPage >= totalPages - 1
-                      ? "pointer-events-none opacity-50"
-                      : undefined
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        )}
-      </>
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href='#' // onClick으로 처리
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage > 0) handlePageChange(currentPage - 1);
+                    }}
+                    className={
+                      currentPage === 0
+                        ? "pointer-events-none opacity-50"
+                        : undefined
+                    }
+                  />
+                </PaginationItem>
+                {renderPageNumbers()}
+                <PaginationItem>
+                  <PaginationNext
+                    href='#' // onClick으로 처리
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage < totalPages - 1)
+                        handlePageChange(currentPage + 1);
+                    }}
+                    className={
+                      currentPage >= totalPages - 1
+                        ? "pointer-events-none opacity-50"
+                        : undefined
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </>
+      )}
     </div>
   );
 }
