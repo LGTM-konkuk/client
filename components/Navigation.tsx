@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "./ui/button";
-import { useAuth } from "@/lib/auth-context";
+import { useAuthStore } from "@/store/auth-store";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +16,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export const Navigation = () => {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -34,9 +36,8 @@ export const Navigation = () => {
   ];
 
   const handleLogout = async () => {
-    logout();
-    // 필요하다면 로그아웃 후 리다이렉션 로직 추가
-    // 예: router.push('/');
+    await logout();
+    router.push("/login");
   };
 
   return (
