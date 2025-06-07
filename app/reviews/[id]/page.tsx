@@ -1,155 +1,196 @@
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/lib/auth-context";
-import { handleApiResponse } from "@/lib/api-utils";
-import {
-  ApiResponse,
-  ReadReviewResponse,
-  ReviewSubmissionStatus,
-  CreateCommentRequest,
-  ReadCommentResponse,
-} from "@/types";
+
 import { UnauthorizedAccess } from "@/components/UnauthorizedAccess";
+import { useAuthStore } from "@/store/auth-store";
+import { FileTree } from "@/components/FileTree";
+import { CodeViewer } from "@/components/code-viewer/CodeViewer";
+import {
+  ReadReviewSubmissionResponse,
+  ProjectFileSystem,
+  FileContent,
+  ReadReviewCommentResponse,
+} from "@/types";
+import { FileTextIcon } from "lucide-react";
+import { ReviewDetailHeader } from "@/components/review/ReviewDetailHeader";
+import { ReviewRequestCard } from "@/components/review/ReviewRequestCard";
+import { GeneralComments } from "@/components/comment/GeneralComments";
+import { FinalReviewForm } from "@/components/review/FinalReviewForm";
+import { useApi } from "@/api";
 
-export default function ReviewDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ReviewDetailPage() {
   const router = useRouter();
-  const { user, getToken, isLoading: authLoading } = useAuth();
-  const [review, setReview] = useState<ReadReviewResponse | null>(null);
-  const [comments, setComments] = useState<ReadCommentResponse[]>([]);
-  const [newComment, setNewComment] = useState("");
+  const { id } = useParams();
+  const { user, isLoading: authLoading } = useAuthStore();
+  const api = useApi();
 
-  const reviewId = params.id;
+  // 상태 관리
+  const [submission, setSubmission] =
+    useState<ReadReviewSubmissionResponse | null>(null);
+  const [fileSystem, setFileSystem] = useState<ProjectFileSystem | null>(null);
+  const [selectedFile, setSelectedFile] = useState<FileContent | null>(null);
+  const [comments, setComments] = useState<ReadReviewCommentResponse[]>([]);
+  const [generalComments, setGeneralComments] = useState<
+    ReadReviewCommentResponse[]
+  >([]);
+  const [finalReviewContent, setFinalReviewContent] = useState("");
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
+  const [isSavingReview, setIsSavingReview] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchReviewAndComments = async () => {
-    if (!user || !reviewId) {
-      setReview(null);
-      setComments([]);
-      return;
-    }
+  const submissionId = parseInt(id as string);
+
+  const loadGeneralComments = useCallback(async () => {
     try {
-      const token = getToken()!;
-      const reviewResponse = await fetch(`/api/backend/reviews/${reviewId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const commentsData = await api.reviews.getComments(submissionId, {
+        page: 0,
+        size: 100,
       });
-      const reviewResult = await handleApiResponse<
-        ApiResponse<ReadReviewResponse>
-      >(reviewResponse);
-      if (reviewResult.data) {
-        setReview(reviewResult.data);
-      } else {
-        setReview(null);
-        throw new Error(
-          reviewResult.message || "리뷰 정보를 불러오지 못했습니다.",
-        );
-      }
-
-      const commentsResponse = await fetch(
-        `/api/backend/reviews/${reviewId}/comments`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+      const general = commentsData.content.filter(
+        (c) => !c.filePath && !c.parentCommentId,
       );
-      const commentsResult = await handleApiResponse<
-        ApiResponse<ReadCommentResponse[]>
-      >(commentsResponse);
-      if (commentsResult.data) {
-        setComments(commentsResult.data);
-      } else {
-        setComments([]);
-        console.warn("댓글 로딩 실패:", commentsResult.message);
-      }
-    } catch (err) {
-      console.error("리뷰 또는 댓글 조회 실패 (page.tsx):", err);
-      setReview(null);
-      setComments([]);
-      if (!review && err instanceof Error) {
-        throw err;
-      } else if (!review) {
-        throw new Error(String(err));
-      }
+      setGeneralComments(general);
+    } catch (error) {
+      console.error("일반 댓글 로딩 실패:", error);
     }
-  };
+  }, [submissionId, api.reviews]);
 
-  useEffect(() => {
-    if (!authLoading) {
-      if (user && reviewId) {
-        fetchReviewAndComments();
-      } else if (!user) {
-        setReview(null);
-        setComments([]);
-      }
-    }
-  }, [authLoading, user, reviewId]);
-
-  const handleCommentSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!user || !reviewId || !newComment.trim()) return;
-
+  const loadReviewData = useCallback(async () => {
+    if (!submissionId) return;
     try {
-      const token = getToken()!;
-      const body: CreateCommentRequest = { content: newComment };
-      const response = await fetch(
-        `/api/backend/reviews/${reviewId}/comments`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        },
-      );
-      const result = await handleApiResponse<ApiResponse<ReadCommentResponse>>(
-        response,
-      );
-      if (result.data) {
-        setComments((prevComments) => [...prevComments, result.data!]);
-        setNewComment("");
-      } else {
-        console.error("댓글 작성 실패:", result.message);
-      }
-    } catch (err) {
-      console.error("댓글 작성 실패 (catch):", err);
+      setError(null);
+      const submissionData = await api.reviews.getSubmission(submissionId);
+      setSubmission(submissionData);
+      setFinalReviewContent("");
+      const fileSystemData = await api.reviews.getFileSystem(submissionId);
+      setFileSystem(fileSystemData);
+      await loadGeneralComments();
+    } catch (error) {
+      console.error("리뷰 데이터 로딩 실패:", error);
+      setError("리뷰 데이터를 불러오는데 실패했습니다.");
     }
-  };
+  }, [submissionId, api.reviews, loadGeneralComments]);
 
-  const getStatusBadge = (status?: ReviewSubmissionStatus) => {
-    if (!status) return null;
-    const statusMap: Record<
-      ReviewSubmissionStatus,
-      {
-        label: string;
-        variant:
-          | "default"
-          | "secondary"
-          | "destructive"
-          | "outline"
-          | null
-          | undefined;
+  // 데이터 로딩
+  useEffect(() => {
+    if (!authLoading && user && submissionId) {
+      loadReviewData();
+    }
+  }, [authLoading, user, submissionId, loadReviewData]);
+
+  const loadFileComments = useCallback(
+    async (filePath: string) => {
+      try {
+        const commentsData = await api.reviews.getComments(submissionId, {
+          filePath,
+          page: 0,
+          size: 100,
+        });
+        setComments(commentsData.content);
+      } catch (error) {
+        console.error("댓글 로딩 실패:", error);
       }
-    > = {
-      PENDING: { label: "대기중", variant: "secondary" },
-      CANCELED: { label: "취소됨", variant: "destructive" },
-      REVIEWED: { label: "리뷰완료", variant: "default" },
-    };
-    const style = statusMap[status] || { label: status, variant: "outline" };
-    return <Badge variant={style.variant}>{style.label}</Badge>;
-  };
+    },
+    [submissionId, api.reviews],
+  );
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("ko-KR");
-  };
+  const handleFileSelect = useCallback(
+    async (filePath: string) => {
+      try {
+        setIsLoadingFile(true);
+        setError(null);
+        const fileContent = await api.reviews.getFileContent(
+          submissionId,
+          filePath,
+        );
+        setSelectedFile(fileContent);
+        await loadFileComments(filePath);
+      } catch (error) {
+        console.error("파일 로딩 실패:", error);
+        setError("파일을 불러오는데 실패했습니다.");
+      } finally {
+        setIsLoadingFile(false);
+      }
+    },
+    [submissionId, api.reviews, loadFileComments],
+  );
+
+  const handleAddComment = useCallback(
+    async (lineNumber: number, content: string) => {
+      if (!selectedFile) return;
+
+      try {
+        await api.reviews.createComment(submissionId, {
+          content,
+          filePath: selectedFile.path,
+          lineNumber,
+        });
+        await loadFileComments(selectedFile.path);
+      } catch (error) {
+        console.error("댓글 추가 실패:", error);
+        throw error;
+      }
+    },
+    [submissionId, selectedFile, api.reviews, loadFileComments],
+  );
+
+  const handleReply = useCallback(
+    async (commentId: string, content: string) => {
+      try {
+        await api.reviews.createReply(commentId, content);
+        if (selectedFile) {
+          await loadFileComments(selectedFile.path);
+        } else {
+          await loadGeneralComments();
+        }
+      } catch (error) {
+        console.error("답글 추가 실패:", error);
+        throw error;
+      }
+    },
+    [selectedFile, api.reviews, loadFileComments, loadGeneralComments],
+  );
+
+  const handleAddGeneralComment = useCallback(
+    async (content: string) => {
+      try {
+        await api.reviews.createComment(submissionId, { content });
+        await loadGeneralComments();
+      } catch (error) {
+        console.error("일반 댓글 추가 실패:", error);
+        throw error;
+      }
+    },
+    [submissionId, api.reviews, loadGeneralComments],
+  );
+
+  const handleSaveFinalReview = useCallback(
+    async (content: string) => {
+      if (!submission) return;
+
+      try {
+        setIsSavingReview(true);
+        setFinalReviewContent(content);
+
+        await api.reviews.create(submissionId, {
+          reviewSubmissionId: submissionId,
+          reviewContent: content,
+        });
+
+        await loadReviewData();
+      } catch (error) {
+        console.error("리뷰 저장 실패:", error);
+        setError("리뷰를 저장하는데 실패했습니다.");
+      } finally {
+        setIsSavingReview(false);
+      }
+    },
+    [submission, submissionId, api.reviews, loadReviewData],
+  );
 
   if (authLoading) {
     return null;
@@ -159,96 +200,105 @@ export default function ReviewDetailPage({
     return <UnauthorizedAccess />;
   }
 
-  if (!review) {
-    return (
-      <div className='container mx-auto py-8 text-center'>
-        <p>리뷰 정보를 찾을 수 없습니다. 또는 로드 중 오류가 발생했습니다.</p>
-        <Button onClick={() => router.push("/reviews")} className='mt-4'>
-          목록으로 돌아가기
-        </Button>
-      </div>
-    );
+  if (error) {
+    throw new Error(error);
+  }
+
+  if (!submission) {
+    return null;
   }
 
   return (
-    <div className='container mx-auto py-8'>
-      <header className='mb-6'>
+    <div className='container mx-auto py-6 max-w-7xl'>
+      {/* 헤더 */}
+      <div className='mb-6'>
         <Button
           variant='outline'
           onClick={() => router.back()}
           className='mb-4'
         >
-          &larr; 뒤로가기
+          ← 뒤로가기
         </Button>
-        <h1 className='text-3xl font-bold mb-1'>
-          {review.gitUrl
-            ? review.gitUrl.split("/").pop()
-            : `리뷰 ID: ${review.id}`}
-        </h1>
-        <div className='flex items-center space-x-4 text-sm text-muted-foreground'>
-          <span>{getStatusBadge(review.status)}</span>
-          <span>요청일: {formatDate(review.createdAt)}</span>
-          <span>리뷰어: {review.reviewer.user.name}</span>
-          <span>리뷰이: {review.reviewee.user.name}</span>
+
+        <ReviewDetailHeader submission={submission} />
+
+        {/* 요청 내용 */}
+        <ReviewRequestCard submission={submission} />
+      </div>
+
+      {/* 메인 컨텐츠 */}
+      <div className='grid grid-cols-12 gap-6'>
+        {/* 사이드바 - 파일 트리 */}
+        <div className='col-span-3'>
+          <Card className='h-fit max-h-[calc(100vh-200px)] overflow-hidden'>
+            <CardHeader>
+              <CardTitle className='text-sm flex items-center'>
+                <FileTextIcon className='h-4 w-4' />
+                파일 목록
+              </CardTitle>
+            </CardHeader>
+            <CardContent className='p-0'>
+              <div className='overflow-y-auto max-h-[calc(100vh-300px)]'>
+                {fileSystem ? (
+                  <FileTree
+                    fileSystem={fileSystem.rootDirectory}
+                    selectedPath={selectedFile?.path}
+                    onFileSelect={handleFileSelect}
+                    className='p-3'
+                  />
+                ) : (
+                  <div className='p-3 text-sm text-muted-foreground'>
+                    파일 시스템을 로딩 중...
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 일반 댓글 */}
+          <GeneralComments
+            comments={generalComments}
+            onAddComment={handleAddGeneralComment}
+          />
         </div>
-      </header>
 
-      <Card className='mb-6'>
-        <CardHeader>
-          <CardTitle>리뷰 요청 내용</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className='whitespace-pre-wrap'>
-            {review.requestMessage || "요청 메시지가 없습니다."}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className='mb-6'>
-        <CardHeader>
-          <CardTitle>리뷰 내용</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className='whitespace-pre-wrap'>
-            {review.reviewContent || "아직 리뷰 내용이 없습니다."}
-          </p>
-        </CardContent>
-      </Card>
-
-      <section>
-        <h2 className='text-2xl font-semibold mb-4'>댓글</h2>
-        <div className='space-y-4 mb-6'>
-          {comments.map((comment) => (
-            <Card key={comment.id}>
-              <CardHeader className='pb-2'>
-                <div className='flex justify-between items-center'>
-                  <p className='font-semibold'>{comment.user.name}</p>
-                  <p className='text-xs text-muted-foreground'>
-                    {formatDate(comment.createdAt)}
-                  </p>
+        {/* 메인 영역 - 코드 뷰어 */}
+        <div className='col-span-9'>
+          {selectedFile ? (
+            <div className='space-y-4'>
+              {isLoadingFile ? (
+                <div className='animate-pulse'>
+                  <div className='h-8 bg-gray-200 rounded mb-4'></div>
+                  <div className='h-96 bg-gray-200 rounded'></div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className='whitespace-pre-wrap'>{comment.content}</p>
+              ) : (
+                <CodeViewer
+                  fileContent={selectedFile}
+                  comments={comments}
+                  onAddComment={handleAddComment}
+                  onReply={handleReply}
+                />
+              )}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className='py-12 text-center'>
+                <FileTextIcon className='h-12 w-12 text-muted-foreground mx-auto mb-4' />
+                <p className='text-muted-foreground'>
+                  좌측에서 파일을 선택하여 코드를 확인하고 댓글을 달아보세요.
+                </p>
               </CardContent>
             </Card>
-          ))}
-          {comments.length === 0 && <p>아직 댓글이 없습니다.</p>}
-        </div>
+          )}
 
-        <form onSubmit={handleCommentSubmit} className='space-y-3'>
-          <Textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder='댓글을 입력하세요...'
-            rows={3}
-            disabled={false}
+          {/* 최종 리뷰 작성 */}
+          <FinalReviewForm
+            onSubmit={handleSaveFinalReview}
+            isSaving={isSavingReview}
+            initialContent={finalReviewContent}
           />
-          <Button type='submit' disabled={!newComment.trim()}>
-            댓글 작성
-          </Button>
-        </form>
-      </section>
+        </div>
+      </div>
     </div>
   );
 }
