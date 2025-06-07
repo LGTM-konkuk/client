@@ -1,38 +1,72 @@
-import { useAuth } from "./auth-context";
+import { useAuthStore } from "../store/auth-store";
 
-// 클라이언트에서 인증 헤더 가져오기
-export function useAuthHeaders() {
-  const { getToken } = useAuth();
-  
-  return () => {
-    const token = getToken();
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/backend";
 
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+export class ApiError extends Error {
+  status: number;
+  data: unknown;
 
-    return headers;
-  };
+  constructor(message: string, status: number, data: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
 }
 
-// 서버사이드나 비-hook 컨텍스트에서 사용
-export function getAuthHeadersFromToken(token: string | null): HeadersInit {
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
+// API 요청 함수
+export async function apiRequest<T>(
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
+  endpoint: string,
+  body: unknown = null,
+  isFormData = false,
+): Promise<T> {
+  const token = useAuthStore.getState().accessToken;
+  const headers: HeadersInit = {};
+
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  return headers;
+  const config: RequestInit = {
+    method,
+    headers,
+  };
+
+  if (body) {
+    config.body = isFormData ? (body as FormData) : JSON.stringify(body);
+  }
+
+  const response = await fetch(`${BASE_URL}${endpoint}`, config);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new ApiError(
+      errorData.message || "API 요청 중 오류가 발생했습니다.",
+      response.status,
+      errorData,
+    );
+  }
+
+  if (
+    response.status === 204 ||
+    response.headers.get("Content-Length") === "0"
+  ) {
+    return {} as T;
+  }
+
+  return response.json() as T;
 }
 
 // API 에러 처리
-export function handleApiError(error: any): string {
+export function handleApiError(error: unknown): string {
+  if (error instanceof ApiError) {
+    return `[${error.status}] ${error.message}`;
+  }
   if (error instanceof Error) {
     return error.message;
   }
