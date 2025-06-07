@@ -6,12 +6,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function ReviewersLoading() {
   return (
     <div className='container py-12'>
-      {/* 검색 필터 스켈레톤 (선택 사항으로 추가 가능) */}
-      {/* <div className='flex gap-4 mb-6'>
+      <div className='flex gap-4 mb-6'>
         <Skeleton className='h-10 w-full max-w-xs' />
         <Skeleton className='h-10 w-full max-w-xs' />
         <Skeleton className='h-10 w-20' />
-      </div> */}
+      </div>
       <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
         {Array.from({ length: 6 }).map((_, i) => (
           <Card key={i}>
