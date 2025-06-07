@@ -14,14 +14,14 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.4887 0.1283 240.88);
+  --primary: oklch(0.35 0.1283 270);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.4887 0.1283 240.88);
+  --secondary-foreground: oklch(0.35 0.1283 270);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.4887 0.1283 240.88);
+  --accent-foreground: oklch(0.35 0.1283 270);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
@@ -33,10 +33,10 @@
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.4887 0.1283 240.88);
+  --sidebar-primary: oklch(0.35 0.1283 270);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.4887 0.1283 240.88);
+  --sidebar-accent-foreground: oklch(0.35 0.1283 270);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 }
@@ -127,5 +127,180 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* PrismJS 코드 하이라이팅 커스텀 스타일 */
+@layer components {
+  /* 코드 블록 기본 스타일 재정의 */
+  .code-viewer pre[class*="language-"] {
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border-radius: 0;
+    background: transparent !important;
+    color: #ccc;
+    font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monaco",
+      "Courier New", monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    tab-size: 2;
+    hyphens: none;
+  }
+
+  .code-viewer code[class*="language-"] {
+    color: #ccc;
+    background: transparent;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    text-shadow: none;
+  }
+
+  /* 토큰 색상 커스터마이징 */
+  .code-viewer .token.comment,
+  .code-viewer .token.prolog,
+  .code-viewer .token.doctype,
+  .code-viewer .token.cdata {
+    color: #7c7c7c;
+  }
+
+  .code-viewer .token.punctuation {
+    color: #c5c5c5;
+  }
+
+  .code-viewer .token.namespace {
+    opacity: 0.7;
+  }
+
+  .code-viewer .token.property,
+  .code-viewer .token.keyword,
+  .code-viewer .token.tag {
+    color: #96cbfe;
+  }
+
+  .code-viewer .token.class-name {
+    color: #ffffb6;
+    text-decoration: underline;
+  }
+
+  .code-viewer .token.boolean,
+  .code-viewer .token.constant {
+    color: #99cc99;
+  }
+
+  .code-viewer .token.symbol,
+  .code-viewer .token.deleted {
+    color: #f92672;
+  }
+
+  .code-viewer .token.number {
+    color: #ff73fd;
+  }
+
+  .code-viewer .token.selector,
+  .code-viewer .token.attr-name,
+  .code-viewer .token.string,
+  .code-viewer .token.char,
+  .code-viewer .token.builtin,
+  .code-viewer .token.inserted {
+    color: #a8ff60;
+  }
+
+  .code-viewer .token.variable {
+    color: #c6c5fe;
+  }
+
+  .code-viewer .token.operator {
+    color: #ededed;
+  }
+
+  .code-viewer .token.entity {
+    color: #ffffb6;
+    cursor: help;
+  }
+
+  .code-viewer .token.url {
+    color: #96cbfe;
+  }
+
+  .code-viewer .language-css .token.string,
+  .code-viewer .style .token.string {
+    color: #87c38a;
+  }
+
+  .code-viewer .token.atrule,
+  .code-viewer .token.attr-value {
+    color: #f9ee98;
+  }
+
+  .code-viewer .token.function {
+    color: #dad085;
+  }
+
+  .code-viewer .token.regex {
+    color: #e9c062;
+  }
+
+  .code-viewer .token.important {
+    color: #fd971f;
+  }
+
+  .code-viewer .token.important,
+  .code-viewer .token.bold {
+    font-weight: bold;
+  }
+
+  .code-viewer .token.italic {
+    font-style: italic;
+  }
+
+  /* TypeScript/JavaScript 특화 하이라이팅 */
+  .code-viewer .token.template-string {
+    color: #a8ff60;
+  }
+
+  .code-viewer .token.template-punctuation {
+    color: #c5c5c5;
+  }
+
+  /* JSX 특화 하이라이팅 */
+  .code-viewer .token.tag .token.punctuation {
+    color: #c5c5c5;
+  }
+
+  .code-viewer .token.tag .token.script {
+    color: #96cbfe;
+  }
+
+  .code-viewer .token.plain-text {
+    color: #ccc;
+  }
+
+  /* 라인 하이라이팅 효과 */
+  .code-viewer .highlighted-line {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-left: 3px solid #96cbfe;
+    padding-left: 0.5rem;
+    margin-left: -0.5rem;
+  }
+
+  /* 스크롤바 스타일링 */
+  .code-viewer ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .code-viewer ::-webkit-scrollbar-track {
+    background: #2d2d2d;
+  }
+
+  .code-viewer ::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+  }
+
+  .code-viewer ::-webkit-scrollbar-thumb:hover {
+    background: #777;
   }
 }
