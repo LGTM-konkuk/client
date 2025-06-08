@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAuthStore } from "@/store/auth-store";
+import { useAuthStore } from "@/store/auth";
 
 // 이 컴포넌트는 앱의 최상단(Layout)에 위치하여
 // 앱이 로드될 때 인증 상태를 초기화하는 역할을 합니다.

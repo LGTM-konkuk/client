@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { UnauthorizedAccess } from "@/components/UnauthorizedAccess";
-import { useAuthStore } from "@/store/auth-store";
+import { useAuthStore } from "@/store/auth";
 import { FileTree } from "@/components/FileTree";
 import { CodeViewer } from "@/components/code-viewer/CodeViewer";
 import {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "./ui/button";
-import { useAuthStore } from "@/store/auth-store";
+import { useAuthStore } from "@/store/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,

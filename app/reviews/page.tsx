@@ -14,7 +14,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useApi } from "@/api";
-import { useAuthStore } from "@/store/auth-store";
+import { useAuthStore } from "@/store/auth";
 import { ReadReviewResponse, ReviewSubmissionStatus } from "@/types";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

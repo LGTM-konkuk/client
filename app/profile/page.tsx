@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAuthStore } from "@/store/auth-store";
+import { useAuthStore } from "@/store/auth";
 import ProfileLoading from "./loading";
 
 export default function ProfilePage() {
