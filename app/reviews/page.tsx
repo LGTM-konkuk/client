@@ -19,15 +19,19 @@ import { ReadReviewResponse, ReviewSubmissionStatus } from "@/types";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import ReviewsLoading from "./loading";
+import { relationWithReview } from "@/types";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ReviewsPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const authLoading = useAuthStore((state) => state.isLoading);
   const isInitialized = useAuthStore((state) => state.isInitialized);
+  const [status, setStatus] = useState<relationWithReview>("all");
   const [reviews, setReviews] = useState<ReadReviewResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+
   const api = useApi();
 
   const fetchReviews = async (page = 0) => {
@@ -39,7 +43,11 @@ export default function ReviewsPage() {
     }
 
     try {
-      const result = await api.reviews.list(page, 10);
+      const result = await api.reviews.list({
+        page,
+        size: 10,
+        status,
+      });
 
       if (result) {
         setReviews(result.content);
@@ -67,7 +75,7 @@ export default function ReviewsPage() {
         setCurrentPage(0);
       }
     }
-  }, [isInitialized, user, currentPage]);
+  }, [isInitialized, user, currentPage, status]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -174,6 +182,18 @@ export default function ReviewsPage() {
           새 리뷰 요청
         </Button>
       </div>
+
+      <Tabs
+        value={status}
+        onValueChange={(value) => setStatus(value as relationWithReview)}
+        className='mb-4'
+      >
+        <TabsList>
+          <TabsTrigger value='all'>전체</TabsTrigger>
+          <TabsTrigger value='received'>답변한 리뷰</TabsTrigger>
+          <TabsTrigger value='sent'>요청한 리뷰</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {reviews.length === 0 ? (
         <div className='text-center py-12'>

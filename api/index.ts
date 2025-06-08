@@ -5,6 +5,7 @@ import type {
   CreateReviewCommentRequest,
   CreateReviewRequest,
   CreateReviewSubmissionRequest,
+  ReviewSearchOptions,
 } from "@/types";
 
 import * as reviewApi from "./review";
@@ -62,8 +63,8 @@ export function useApi() {
         [],
       ),
       list: useCallback(
-        (page?: number, size?: number) =>
-          reviewApi.listReviews(apiRequest)(page, size),
+        (options: ReviewSearchOptions) =>
+          reviewApi.listReviews(apiRequest)(options),
         [],
       ),
     },

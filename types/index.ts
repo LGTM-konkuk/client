@@ -230,3 +230,11 @@ export interface ReadCommentResponse extends BaseAuditResponse {
   content: string;
   user: UserMinimalResponse; // 댓글 작성자
 }
+
+export type relationWithReview = "sent" | "received" | "all";
+
+export interface ReviewSearchOptions {
+  page: number;
+  size: number;
+  status?: relationWithReview;
+}

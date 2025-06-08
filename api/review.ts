@@ -12,6 +12,7 @@ import {
   ReadReviewCommentResponse,
   ReadReviewResponse,
   ReadReviewSubmissionResponse,
+  ReviewSearchOptions,
 } from "@/types";
 import type { apiRequest } from "@/lib/api-utils";
 
@@ -133,10 +134,15 @@ export const createReviewSubmission =
 
 export const listReviews =
   (authedApi: AuthedApi) =>
-  async (page = 0, size = 10): Promise<Page<ReadReviewResponse>> => {
+  async ({
+    page,
+    size,
+    status,
+  }: ReviewSearchOptions): Promise<Page<ReadReviewResponse>> => {
     const params = new URLSearchParams({
-      page: page.toString(),
-      size: size.toString(),
+      page: page?.toString() ?? "0",
+      size: size?.toString() ?? "10",
+      status: status ?? "all",
     });
     const response = await authedApi<ApiResponse<Page<ReadReviewResponse>>>(
       "GET",
