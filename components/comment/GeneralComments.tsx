@@ -16,7 +16,7 @@ export function GeneralComments({
 }: GeneralCommentsProps) {
   return (
     <Card className='mt-4'>
-      <CardHeader className='pb-3'>
+      <CardHeader>
         <CardTitle className='text-sm flex items-center gap-2'>
           <MessageSquareIcon className='h-4 w-4' />
           일반 댓글 ({comments.length})
@@ -26,10 +26,10 @@ export function GeneralComments({
         {comments.map((comment) => (
           <div
             key={comment.id}
-            className='text-xs border-l-2 border-blue-200 pl-2'
+            className='text-sm border-l-2 border-primary pl-2 flex flex-col gap-2'
           >
-            <div className='font-medium'>{comment.author.name}</div>
-            <p className='text-muted-foreground'>{comment.content}</p>
+            <div className='font-bold'>{comment.author.name}</div>
+            <p className='text-muted-foreground'>{comment.content}</p>{" "}
           </div>
         ))}
 

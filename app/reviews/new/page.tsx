@@ -21,21 +21,17 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { UnauthorizedAccess } from "@/components/UnauthorizedAccess";
-import {
-  CreateReviewSubmissionRequest,
-  GitBranch,
-} from "@/types";
+import { CreateReviewSubmissionRequest, GitBranch } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
-import { useAuthStore } from "@/store/auth-store";
+import { useAuthStore } from "@/store/auth";
 
 // Zod 스키마 정의
 const formSchema = z.object({
-  reviewerId: z.string().min(1, "리뷰어를 선택해주세요."),
   gitUrl: z
     .string()
     .min(1, "Git 저장소 URL을 입력해주세요.")
@@ -52,10 +48,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function NewReviewPage() {
   const user = useAuthStore((state) => state.user);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const api = useApi();
-
-  const preselectedReviewerId = searchParams.get("reviewerId");
 
   // 상태 관리
   const [branches, setBranches] = useState<GitBranch[]>([]);
@@ -66,7 +59,6 @@ export default function NewReviewPage() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      reviewerId: preselectedReviewerId || "",
       gitUrl: "",
       branch: "",
       requestDetails: "",
@@ -109,7 +101,7 @@ export default function NewReviewPage() {
     // 디바운스를 위한 타이머
     const timer = setTimeout(fetchBranches, 500);
     return () => clearTimeout(timer);
-  }, [watchedGitUrl, form, api.git]);
+  }, [watchedGitUrl, api.git]);
 
   const isValidGitUrl = (url: string): boolean => {
     const gitUrlRegex =
@@ -122,7 +114,6 @@ export default function NewReviewPage() {
 
     try {
       const requestData: CreateReviewSubmissionRequest = {
-        reviewerId: parseInt(data.reviewerId),
         gitUrl: data.gitUrl,
         branch: data.branch,
         requestDetails: data.requestDetails,

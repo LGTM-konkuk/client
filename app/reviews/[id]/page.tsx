@@ -46,10 +46,7 @@ export default function ReviewDetailPage() {
 
   const loadGeneralComments = useCallback(async () => {
     try {
-      const commentsData = await api.reviews.getComments(submissionId, {
-        page: 0,
-        size: 100,
-      });
+      const commentsData = await api.reviews.getComments(submissionId);
       const general = commentsData.content.filter(
         (c) => !c.filePath && !c.parentCommentId,
       );
@@ -85,11 +82,10 @@ export default function ReviewDetailPage() {
   const loadFileComments = useCallback(
     async (filePath: string) => {
       try {
-        const commentsData = await api.reviews.getComments(submissionId, {
+        const commentsData = await api.reviews.getComments(
+          submissionId,
           filePath,
-          page: 0,
-          size: 100,
-        });
+        );
         setComments(commentsData.content);
       } catch (error) {
         console.error("댓글 로딩 실패:", error);
@@ -254,12 +250,6 @@ export default function ReviewDetailPage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* 일반 댓글 */}
-          <GeneralComments
-            comments={generalComments}
-            onAddComment={handleAddGeneralComment}
-          />
         </div>
 
         {/* 메인 영역 - 코드 뷰어 */}
@@ -292,6 +282,10 @@ export default function ReviewDetailPage() {
           )}
 
           {/* 최종 리뷰 작성 */}
+          <GeneralComments
+            comments={generalComments}
+            onAddComment={handleAddGeneralComment}
+          />
           <FinalReviewForm
             onSubmit={handleSaveFinalReview}
             isSaving={isSavingReview}

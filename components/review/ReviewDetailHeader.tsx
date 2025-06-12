@@ -44,6 +44,10 @@ export function ReviewDetailHeader({ submission }: ReviewDetailHeaderProps) {
           </div>
           <div className='flex items-center gap-1'>
             <UserIcon className='h-4 w-4' />
+            <span>리뷰이: {submission.reviewee.user.name}</span>
+          </div>
+          <div className='flex items-center gap-1'>
+            <UserIcon className='h-4 w-4' />
             <span>리뷰어: {submission.reviewer.user.name}</span>
           </div>
         </div>
