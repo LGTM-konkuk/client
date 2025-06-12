@@ -13,6 +13,17 @@ import {
 import { useAuthStore } from "@/store/auth";
 import ProfileLoading from "./loading";
 
+function ProfileContent({ title, data }: { title: string; data: string }) {
+  return (
+    <div className='py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4'>
+      <dt className='text-sm font-medium text-gray-500'>{title}</dt>
+      <dd className='mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2'>
+        {data}
+      </dd>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const user = useAuthStore((state) => state.user);
   const isInitialized = useAuthStore((state) => state.isInitialized);
@@ -45,18 +56,9 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent>
           <dl className='sm:divide-y sm:divide-gray-200'>
-            <div className='py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4'>
-              <dt className='text-sm font-medium text-gray-500'>이름</dt>
-              <dd className='mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2'>
-                {user.name}
-              </dd>
-            </div>
-            <div className='py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4'>
-              <dt className='text-sm font-medium text-gray-500'>이메일</dt>
-              <dd className='mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2'>
-                {user.email}
-              </dd>
-            </div>
+            <ProfileContent title='이름' data={user.name} />
+            <ProfileContent title='이메일' data={user.email} />
+            <ProfileContent title='권한' data={user.role} />
           </dl>
         </CardContent>
       </Card>
