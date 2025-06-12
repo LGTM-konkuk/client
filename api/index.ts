@@ -1,89 +1,59 @@
 import { apiRequest } from "@/lib/api-utils";
-import { useCallback } from "react";
+import { useMemo } from "react";
 
 import type {
   CreateReviewCommentRequest,
   CreateReviewRequest,
-  CreateReviewSubmissionRequest,
-  ReviewSearchOptions,
+  CreateReviewSubmissionRequest
 } from "@/types";
 
+import * as gitApi from "./git";
 import * as reviewApi from "./review";
 import * as reviewersApi from "./reviewers";
-import * as gitApi from "./git";
+import * as userApi from "./user";
 
 export function useApi() {
-  return {
-    reviews: {
-      getSubmission: useCallback(
-        (submissionId: number) =>
+  return useMemo(
+    () => ({
+      users: {
+        me: () => userApi.me(apiRequest),
+      },
+      reviews: {
+        getSubmission: (submissionId: number) =>
           reviewApi.getReviewSubmission(apiRequest)(submissionId),
-        [],
-      ),
-      getFileSystem: useCallback(
-        (submissionId: number) =>
+        getFileSystem: (submissionId: number) =>
           reviewApi.getFileSystem(apiRequest)(submissionId),
-        [],
-      ),
-      getFileContent: useCallback(
-        (submissionId: number, path: string) =>
+        getFileContent: (submissionId: number, path: string) =>
           reviewApi.getFileContent(apiRequest)(submissionId, path),
-        [],
-      ),
-      getComments: useCallback(
-        (
+        getComments: (
           submissionId: number,
-          options?: {
-            filePath?: string;
-            lineNumber?: number;
-            page?: number;
-            size?: number;
-          },
-        ) => reviewApi.getReviewComments(apiRequest)(submissionId, options),
-        [],
-      ),
-      createComment: useCallback(
-        (submissionId: number, data: CreateReviewCommentRequest) =>
-          reviewApi.createReviewComment(apiRequest)(submissionId, data),
-        [],
-      ),
-      createReply: useCallback(
-        (commentId: string, content: string) =>
+          filePath?: string,
+        ) => reviewApi.getReviewComments(apiRequest)(submissionId, filePath),
+        createComment: (
+          submissionId: number,
+          data: CreateReviewCommentRequest,
+        ) => reviewApi.createReviewComment(apiRequest)(submissionId, data),
+        createReply: (commentId: string, content: string) =>
           reviewApi.createReply(apiRequest)(commentId, content),
-        [],
-      ),
-      create: useCallback(
-        (submissionId: number, data: CreateReviewRequest) =>
+        create: (submissionId: number, data: CreateReviewRequest) =>
           reviewApi.createReview(apiRequest)(submissionId, data),
-        [],
-      ),
-      createSubmission: useCallback(
-        (data: CreateReviewSubmissionRequest) =>
+        createSubmission: (data: CreateReviewSubmissionRequest) =>
           reviewApi.createReviewSubmission(apiRequest)(data),
-        [],
-      ),
-      list: useCallback(
-        (options: ReviewSearchOptions) =>
+        list: (options: { page?: number; size?: number; status?: string }) =>
           reviewApi.listReviews(apiRequest)(options),
-        [],
-      ),
-    },
-    reviewers: {
-      list: useCallback(
-        (options?: {
+      },
+      reviewers: {
+        list: (options?: {
           preferences?: string;
           tags?: string;
           page?: number;
           size?: number;
         }) => reviewersApi.listReviewers(apiRequest)(options),
-        [],
-      ),
-    },
-    git: {
-      getBranches: useCallback(
-        (gitUrl: string) => gitApi.getBranches(apiRequest)(gitUrl),
-        [],
-      ),
-    },
-  };
+      },
+      git: {
+        getBranches: (gitUrl: string) => gitApi.getBranches(apiRequest)(gitUrl),
+      },
+    }),
+    [],
+  );
 }

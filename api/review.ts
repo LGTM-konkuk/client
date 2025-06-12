@@ -12,7 +12,6 @@ import {
   ReadReviewCommentResponse,
   ReadReviewResponse,
   ReadReviewSubmissionResponse,
-  ReviewSearchOptions,
 } from "@/types";
 import type { apiRequest } from "@/lib/api-utils";
 
@@ -44,7 +43,7 @@ export const getFileContent =
     const encodedPath = encodeURIComponent(filePath);
     const response = await authedApi<ApiResponse<FileContent>>(
       "GET",
-      `/review-submissions/${submissionId}/files/${encodedPath}`,
+      `/review-submissions/${submissionId}/files?path=${encodedPath}`,
     );
     return response.data!;
   };
@@ -53,22 +52,10 @@ export const getReviewComments =
   (authedApi: AuthedApi) =>
   async (
     submissionId: number,
-    options?: {
-      filePath?: string;
-      lineNumber?: number;
-      page?: number;
-      size?: number;
-    },
+    filePath?: string,
   ): Promise<ListReviewCommentsResponse> => {
     const params = new URLSearchParams();
-    if (options?.filePath) params.append("filePath", options.filePath);
-    if (options?.lineNumber)
-      params.append("lineNumber", options.lineNumber.toString());
-    if (options?.page !== undefined)
-      params.append("page", options.page.toString());
-    if (options?.size !== undefined)
-      params.append("size", options.size.toString());
-
+    if (filePath) params.append("filePath", filePath);
     const queryString = params.toString() ? `?${params.toString()}` : "";
     const response = await authedApi<ApiResponse<ListReviewCommentsResponse>>(
       "GET",
@@ -134,16 +121,18 @@ export const createReviewSubmission =
 
 export const listReviews =
   (authedApi: AuthedApi) =>
-  async ({
-    page,
-    size,
-    status,
-  }: ReviewSearchOptions): Promise<Page<ReadReviewResponse>> => {
-    const params = new URLSearchParams({
-      page: page?.toString() ?? "0",
-      size: size?.toString() ?? "10",
-      status: status ?? "all",
-    });
+  async (options: {
+    page?: number;
+    size?: number;
+    status?: string;
+  }): Promise<Page<ReadReviewResponse>> => {
+    const params = new URLSearchParams();
+    if (options.page !== undefined)
+      params.append("page", options.page.toString());
+    if (options.size !== undefined)
+      params.append("size", options.size.toString());
+    if (options.status) params.append("status", options.status);
+
     const response = await authedApi<ApiResponse<Page<ReadReviewResponse>>>(
       "GET",
       `/reviews?${params.toString()}`,
