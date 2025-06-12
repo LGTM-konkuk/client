@@ -17,7 +17,7 @@ export type UserRole = "USER" | "REVIEWER" | "REVIEWEE" | "ADMIN";
 export interface UserMinimalResponse {
   id: number;
   name: string;
-  email?: string; // 선택적 필드
+  email: string; // 선택적 필드
 }
 
 // 사용자 상세 정보 응답
@@ -83,7 +83,6 @@ export type ReviewSubmissionStatus = "PENDING" | "CANCELED" | "REVIEWED";
 
 // 리뷰 제출(요청) 생성 요청
 export interface CreateReviewSubmissionRequest {
-  reviewerId: number;
   gitUrl: string;
   branch: string;
   requestDetails: string;
